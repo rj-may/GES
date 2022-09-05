@@ -18,8 +18,7 @@ fds, fld, fls, flv, fnd, fns, fnv, frd, frs, fvd, fvs, beta_biota, q10, biota_in
 k= params.k#for deltaN of CO2
 
 
-# bioCH4ppb = bioCH4 * 1e12/ 16 *  1e9/AM
-bioCH4moles = bioCH4 * 1e12/ 16
+bioCH4ppb = bioCH4 * 1e12/ 16 *  1e9/AM
 
 ppmtoMol = 1.77e+14 #mult by this for CO2 PPM -> Moles
 
@@ -60,7 +59,6 @@ class scenario:
 	def __init__(self, tspan, state, temp_array, RCP, custom_ch4 = False, reduction = .9, baseline = 142.0527):
 		self.__tspan = tspan
 		self.__state = state
-		self.__fixState()
 		self.__RCP_emit_df = RCP #df
 		self.__reduction = reduction #value 0-1
 		self.__custom_ch4 = custom_ch4 #boolean
@@ -85,21 +83,18 @@ class scenario:
 		self.__LUC= np.zeros([10000])
 		self.__LUC[self.__RCP_emit_df.Year] = self.__RCP_emit_df.LUC  *  1e15/12
 		
-		#set CH4 by RCP or custom
+		#set ppb CH4 by RCP or custom
 		self.__emitM = np.zeros(10000)
-		# self.__emitM[self.__RCP_emit_df.Year] = (self.__RCP_emit_df.CH4) * 1e12/ 16 *  1e9/AM #convert to moles then convert to ppb
-		self.__emitM[self.__RCP_emit_df.Year] = (self.__RCP_emit_df.CH4) * 1e12/ 16  # just moles
-		#set  N2O by RCP
+		self.__emitM[self.__RCP_emit_df.Year] = (self.__RCP_emit_df.CH4) * 1e12/ 16 *  1e9/AM #convert to moles then convert to ppb
+		#set ppb N2O by RCP
 		self.__emitN = np.zeros(10000)
-		# self.__emitN[self.__RCP_emit_df.Year]= self.__RCP_emit_df.N2O *  1e12 / 44.013 * 1e9 / AM # convert to moles then convert to ppb
-		self.__emitN[self.__RCP_emit_df.Year]= self.__RCP_emit_df.N2O *  1e12 / 44.013 #just moles
-
+		self.__emitN[self.__RCP_emit_df.Year]= self.__RCP_emit_df.N2O *  1e12 / 44.013 * 1e9 / AM # convert to moles then convert to ppb
 		# Sulf oxide emissions
 		self.__emitSOx = np.zeros(10000)
 		self.__emitSOx[self.__RCP_emit_df.Year] = self.__RCP_emit_df.SOx 
 
 		self.__H_track = np.zeros(10000)
-		# self.__H_trackPF = np.zeros(10000)
+		self.__H_trackPF = np.zeros(10000)
 		
 		#permafrost temperature tracker of temp
 		self.__temp_trackOG = temp_array
@@ -114,12 +109,6 @@ class scenario:
 		self.get_scenarioPF()
 		
 	
-	def __fixState(self):
-		fixing = np.copy(self.__getState())
-		fixing[8] = fixing[8] * AM/1e9 #Converting back to moles
-		fixing[9] = fixing[9] * AM/1e9 #converting back to moles
-		self.__state= fixing
-
 	def get_RCP(self):
 		return self.__RCP_emit_df
 	def __getState(self):
@@ -150,7 +139,6 @@ class scenario:
 		return self.__temp_track
 	def getFinalTemp(self):
 	    return self.get_temp_track()[self.__get_tspan()[1]]
-
 	def getTemp2100(self):
 	    return self.get_temp_track()[2100]
 	    
@@ -199,8 +187,8 @@ class scenario:
 
 	  currentppm = QA / ppmtoMol
 	  # ppm_array[t_yr] = currentppm
-	  m = ch4 *1e9/AM #ppb
-	  n = n2o  *1e9/AM #ppb 
+	  m = ch4 #ppb
+	  n = n2o #ppb 
 
 	  cERF = k * np.log(currentppm / init_ppm) * 3.154e+07 # J/yr conversion
 	  mERF = ((alpha_ch4 * (m**.5 - m0**.5)) - (fmn(m,n0) - fmn(m0,n0)) ) * 3.154e+07
@@ -212,8 +200,8 @@ class scenario:
 	  self.__rf[t_yr,:] = np.array([cERF, mERF, nERF, sERF, deltaN])
 
 	  Emit = emissionsC[t_yr];
-	  emit_methane = emissionsM[t_yr] 
-	  emit_n20 = emissionsN[t_yr] 
+	  emit_methane = emissionsM[t_yr] # note these are in ppb
+	  emit_n20 = emissionsN[t_yr] #note these are in ppb
 	  avgT = np.average(self.__temp_track[t_yr-11: t_yr])
 	  NPP_val = NPP(currentppm)
 
@@ -226,7 +214,7 @@ class scenario:
 			  NPP_val * fnv - (CV * (fvd + fvs)) - LUC[t_yr] * flv,   #dCveg
 			  NPP_val * fnd + (CV * fvd) - (CD * fds) - RH_det(CD, avgT) - LUC[t_yr]   * fld,     #dCdet 
 			  NPP_val * fns + (CV * fvs)  + (CD * fds) - RH_soil(CS, avgT) - LUC[t_yr] * fls, 
-			  emit_methane + bioCH4moles - ch4/ 12, #decay rate of 1/12 a year methane
+			  emit_methane + bioCH4ppb - ch4/ 12, #decay rate of 1/12 a year methane
 			  emit_n20 - n2o/114 ]    #dCsoil
 			  
 	  self.__temp_track[t_yr] = tMix + dydt[0]
@@ -255,8 +243,8 @@ class scenario:
 
 	  currentppm = QA / ppmtoMol
 	  # ppm_array[t_yr] = currentppm
-	  m = ch4 *1e9/AM #ppb
-	  n = n2o *1e9/AM #ppb 
+	  m = ch4 #ppb
+	  n = n2o #ppb 
 
 	  cERF = k * np.log(currentppm / init_ppm) * 3.154e+07 # J/yr conversion
 	  mERF = ((alpha_ch4 * (m**.5 - m0**.5)) - (fmn(m,n0) - fmn(m0,n0)) ) * 3.154e+07
@@ -268,8 +256,8 @@ class scenario:
 	  self.__rf[t_yr,:] = np.array([cERF, mERF, nERF, sERF, deltaN]);
 	  
 	  Emit = emissionsC[t_yr];
-	  emit_methane = emissionsM[t_yr] 
-	  emit_n20 = emissionsN[t_yr]
+	  emit_methane = emissionsM[t_yr] # note these are in ppb
+	  emit_n20 = emissionsN[t_yr] #note these are in ppb
 	  
 	  #permafrost stuff
 	  # shoudl be negative 
@@ -300,8 +288,8 @@ class scenario:
 			  NPP_val * fnv - (CV * (fvd + fvs)) - LUC[t_yr] * flv,   #dCveg
 			  NPP_val * fnd + (CV * fvd) - (CD * fds) - RH_det(CD, avgT) - LUC[t_yr]   * fld,     #dCdet 
 			  NPP_val * fns + (CV * fvs)  + (CD * fds) - RH_soil(CS, avgT) - LUC[t_yr] * fls,
-			  emit_methane + bioCH4moles  + PF_emit_ch4 - ch4/ 12, #decay rate of 1/12 a year methane 
-			  emit_n20 -  n2o/114, 
+			  emit_methane + bioCH4ppb  + PF_emit_ch4_ppb - ch4/ 12, #decay rate of 1/12 a year methane #PPB
+			  emit_n20 -  n2o/114, #change  in N2o  PPB
 			  dCpfdt, # d Cpf /dt
 			  dLc,  # Labile carbon 
 			  dLm] # Labile carbon as methane 
