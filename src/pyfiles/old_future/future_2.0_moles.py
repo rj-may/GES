@@ -108,7 +108,6 @@ class scenario:
 		#permafrost tracker of emissions
 		self.__emitPF = np.zeros((10000, 2))
 		
-		self.__meth_track = np.zeros(10000)
 		# radiative forcing tracker
 		self.__rf = np.zeros((10000,5))
 		
@@ -283,25 +282,19 @@ class scenario:
 	  dLm = -B * (1-propPassive) * (propCH4) - 1 / tao * Lm
 	  # print(PF_extent(t_yr) - PF_extent(t_yr-1))
 
-	  self.__meth_track[t_yr] = dLm  #track new methane so it can be converted to carbon.
-
-	  carbon_from_meth = self.__meth_track[t_yr -12]
-	#   carbon_from_meth = 0
-
-
 	  # print(dCpfdt)
 	  PF_emit_co2 = 1 /tao * Lc 
 	  PF_emit_ch4 = 1/tao * Lm  # should be moles of methane 
 	  self.__emitPF[t_yr,:] = np.add(self.__emitPF[t_yr - 1, : ], np.array([PF_emit_co2, PF_emit_ch4]) )
 	  
-	#   PF_emit_ch4_ppb = PF_emit_ch4 *  1e9 / AM #convert to parts per billion
+	  PF_emit_ch4_ppb = PF_emit_ch4 *  1e9 / AM #convert to parts per billion
 	  
 	  avgT = np.average(self.__temp_track[t_yr-11: t_yr])
 	  NPP_val = NPP(currentppm)
 	  
 	  dydt = [ (-1 * lambdaHat * tMix - (gamma * (tMix - tDeep)) + deltaN )/ mumix , #change in mixing layer
 			  (gamma * (tMix - tDeep)) / mudeep, #change in deep layer
-			  -ka * QA + ka * kH * QU / (delta_a * Lambda) + Emit + + RH_det(CD, avgT) + RH_soil(CS, avgT) - NPP_val  +PF_emit_co2 + carbon_from_meth, #dQA/dt
+			  -ka * QA + ka * kH * QU / (delta_a * Lambda) + Emit + + RH_det(CD, avgT) + RH_soil(CS, avgT) - NPP_val  +PF_emit_co2, #dQA/dt
 			  ka * QA - ka * kH* QU / (delta_a * Lambda) - kd * QU + kd * QL / delta_d, #dQU / dt
 			  kd*QU - kd* QL / delta_d,#dQL/dt
 			  NPP_val * fnv - (CV * (fvd + fvs)) - LUC[t_yr] * flv,   #dCveg
