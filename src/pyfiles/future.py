@@ -283,7 +283,7 @@ class scenario:
 	  dLm = -B * (1-propPassive) * (propCH4) - 1 / tao * Lm
 	  # print(PF_extent(t_yr) - PF_extent(t_yr-1))
 
-	  self.__meth_track[t_yr] = dLm  #track new methane so it can be converted to carbon.
+	  self.__meth_track[t_yr] = dLm  + emit_methane * .25 #track new methane so it can be converted to carbon. #abritarily say that 1/4 of methane is new carbon from petroleum 
 
 	  carbon_from_meth = self.__meth_track[t_yr -12]
 	#   carbon_from_meth = 0
